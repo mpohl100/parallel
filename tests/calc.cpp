@@ -1,6 +1,6 @@
 #include <catch2/catch_all.hpp>
 
-#include "par/ContinuableWork.h"
+#include "par/Calc.h"
 #include "par/parallel.h"
 
 
@@ -9,9 +9,9 @@
 
 namespace {
 
-TEST_CASE("ContinuableTask", "[continuable_task]") {
+TEST_CASE("Calc", "[calc]") {
 
-  SECTION("ContinuableTaskThenExecutesAllFunctionsOfTheChain") {
+  SECTION("CalcCanBeInstantiated") {
     auto executor = par::Executor{4};
     auto return_function = [](){ return 3; };
     auto work = par::Calc1<int()>{return_function};
