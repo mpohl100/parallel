@@ -1,3 +1,5 @@
+add_subdirectory( par )
+
 set( LIB_SOURCES Lib.cpp)
 
 find_package( range-v3 REQUIRED )
