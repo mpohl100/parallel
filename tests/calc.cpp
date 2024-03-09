@@ -28,25 +28,30 @@ TEST_CASE("Calc", "[calc]") {
     auto inout_function = [](int i){ return ++i; };
     auto work = par::Calc<int()>{return_function};
     auto work2 = work.then<int>(executor, inout_function);
+    auto work3 = work2.then<int>(executor, inout_function);
     executor.run(work.make_task());
-    executor.wait_for(work2.make_task());
+    executor.wait_for(work3.make_task());
     CHECK(work.is_finished());
     CHECK(work2.is_finished());
-    CHECK(work2.result() == 43);
+    CHECK(work3.is_finished());
+    CHECK(work3.result() == 44);
   }
   
   SECTION("CalcThenWorks2"){
     auto executor = par::Executor{4};
     auto return_function = [](){ return 42; };
     int result = 0;
+    auto inout_function = [](int i){ return ++i; };
     auto void_function = [&result](int i){ result = i + 1; };
     auto work = par::Calc<int()>{return_function};
-    auto work2 = work.then(executor, void_function);
+    auto work2 = work.then<int>(executor, inout_function);
+    auto work3 = work2.then(executor, void_function);
     executor.run(work.make_task());
-    executor.wait_for(work2.make_task());
+    executor.wait_for(work3.make_task());
     CHECK(work.is_finished());
     CHECK(work2.is_finished());
-    CHECK(result == 43);
+    CHECK(work3.is_finished());
+    CHECK(result == 44);
   }
 
 }
