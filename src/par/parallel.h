@@ -1,7 +1,7 @@
 #pragma once
 
 #include "par/Calculation.h"
-#include "par/ContinuableWork.h"
+#include "par/Calc.h"
 #include "par/Flow.h"
 #include "par/Task.h"
 
