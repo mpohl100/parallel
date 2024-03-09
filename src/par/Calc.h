@@ -87,6 +87,27 @@ private:
 
 template <typename> struct Calc;
 
+template<>
+struct Calc<void()> {
+  Calc() : _impl{std::make_shared<CalcImpl<void()>>()} {}
+  Calc(std::function<void()> func)
+      : _impl{std::make_shared<CalcImpl<void()>>(func)} {}
+  Calc(const Calc &) = default;
+  Calc(Calc &&) = default;
+  Calc &operator=(const Calc &) = default;
+  Calc &operator=(Calc &&) = default;
+  virtual ~Calc() = default;
+  Task make_task() const {
+    return Task{_impl};
+  }
+
+  bool is_finished() const {
+    return _impl->is_finished();
+  }
+
+private:
+  std::shared_ptr<CalcImpl<void()>> _impl;
+};
 
 template <typename TResult, typename TArg> 
 struct Calc<TResult(TArg)> {
@@ -102,13 +123,13 @@ struct Calc<TResult(TArg)> {
     return Task{_impl};
   }
 
-  Calc<void(TResult)> then(Executor& executor, std::function<void(TResult)> continuation)
+  Calc<void()> then(Executor& executor, std::function<void(TResult)> continuation)
   {
     auto func = [this, continuation]() {
       assert(this->impl()->is_finished());
       continuation(this->result());
     };
-    auto continuation_calc = Calc<void(TResult)>(func);
+    auto continuation_calc = Calc<void()>(func);
     auto continuation_task = continuation_calc.make_task();
     continuation_task.succeed(this->make_task());
     executor.run(continuation_task);
@@ -155,13 +176,13 @@ struct Calc<TResult()> {
     return Task{_impl};
   }
 
-  Calc<void(TResult)> then(Executor& executor, std::function<void(TResult)> continuation)
+  Calc<void()> then(Executor& executor, std::function<void(TResult)> continuation)
   {
     auto func = [this, continuation]() {
       assert(this->_impl->is_finished());
       continuation(this->result());
     };
-    auto continuation_calc = Calc<void(TResult)>(func);
+    auto continuation_calc = Calc<void()>(func);
     auto continuation_task = continuation_calc.make_task();
     auto this_task = this->make_task();
     continuation_task.succeed(this_task);
@@ -219,28 +240,6 @@ struct Calc<void(TArg)> {
 
 private:
   std::shared_ptr<CalcImpl<void(TArg)>> _impl;
-};
-
-template<>
-struct Calc<void()> {
-  Calc() : _impl{std::make_shared<CalcImpl<void()>>()} {}
-  Calc(std::function<void()> func)
-      : _impl{std::make_shared<CalcImpl<void()>>(func)} {}
-  Calc(const Calc &) = default;
-  Calc(Calc &&) = default;
-  Calc &operator=(const Calc &) = default;
-  Calc &operator=(Calc &&) = default;
-  virtual ~Calc() = default;
-  Task make_task() const {
-    return Task{_impl};
-  }
-
-  bool is_finished() const {
-    return _impl->is_finished();
-  }
-
-private:
-  std::shared_ptr<CalcImpl<void()>> _impl;
 };
 
 } // namespace par

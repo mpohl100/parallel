@@ -22,7 +22,7 @@ TEST_CASE("Calc", "[calc]") {
     auto inout_function = [](int x){ return x; };
     auto work4 = par::Calc<int(int)>{inout_function};
   }
-  SECTION("CalcThenWorks"){
+  SECTION("CalcThenWorks1"){
     auto executor = par::Executor{4};
     auto return_function = [](){ return 42; };
     auto inout_function = [](int i){ return ++i; };
@@ -33,6 +33,20 @@ TEST_CASE("Calc", "[calc]") {
     CHECK(work.is_finished());
     CHECK(work2.is_finished());
     CHECK(work2.result() == 43);
+  }
+  
+  SECTION("CalcThenWorks2"){
+    auto executor = par::Executor{4};
+    auto return_function = [](){ return 42; };
+    int result = 0;
+    auto void_function = [&result](int i){ result = i + 1; };
+    auto work = par::Calc<int()>{return_function};
+    auto work2 = work.then(executor, void_function);
+    executor.run(work.make_task());
+    executor.wait_for(work2.make_task());
+    CHECK(work.is_finished());
+    CHECK(work2.is_finished());
+    CHECK(result == 43);
   }
 
 }
