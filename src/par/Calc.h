@@ -2,7 +2,9 @@
 
 #include "par/Work.h"
 #include "par/Task.h"
+#include "par/Executor.h"
 
+#include <cassert>
 #include <type_traits>
 
 namespace par {
@@ -100,6 +102,41 @@ struct Calc<TResult(TArg)> {
     return Task{_impl};
   }
 
+  Calc<void(TResult)> then(Executor& executor, std::function<void(TResult)> continuation)
+  {
+    auto func = [this, continuation]() {
+      assert(this->impl()->is_finished());
+      continuation(this->result());
+    };
+    auto continuation_calc = Calc<void(TResult)>(func);
+    auto continuation_task = continuation_calc.make_task();
+    continuation_task.succeed(this->make_task());
+    executor.run(continuation_task);
+    return continuation_calc;
+  }
+
+  template<typename ThenResult>
+  Calc<ThenResult()> then(Executor& executor, std::function<ThenResult(TResult)> continuation)
+  {
+    auto func = [this, continuation]() {
+      assert(this->impl()->is_finished());
+      return continuation(this->result());
+    };
+    auto continuation_calc = Calc<ThenResult()>(func);
+    auto continuation_task = continuation_calc.make_task();
+    continuation_task.succeed(this->make_task());
+    executor.run(continuation_task);
+    return continuation_calc;
+  }
+
+  TResult result() const {
+    return _impl->result();
+  }
+
+  bool is_finished() const {
+    return _impl->is_finished();
+  }
+
 private:
   std::shared_ptr<CalcImpl<TResult(TArg)>> _impl;
 };
@@ -117,6 +154,44 @@ struct Calc<TResult()> {
   Task make_task() const {
     return Task{_impl};
   }
+
+  Calc<void(TResult)> then(Executor& executor, std::function<void(TResult)> continuation)
+  {
+    auto func = [this, continuation]() {
+      assert(this->_impl->is_finished());
+      continuation(this->result());
+    };
+    auto continuation_calc = Calc<void(TResult)>(func);
+    auto continuation_task = continuation_calc.make_task();
+    auto this_task = this->make_task();
+    continuation_task.succeed(this_task);
+    executor.run(continuation_task);
+    return continuation_calc;
+  }
+
+  template<typename ThenResult>
+  Calc<ThenResult()> then(Executor& executor, std::function<ThenResult(TResult)> continuation)
+  {
+    auto func = [this, continuation]() {
+      assert(this->_impl->is_finished());
+      return continuation(this->result());
+    };
+    auto continuation_calc = Calc<ThenResult()>(func);
+    auto continuation_task = continuation_calc.make_task();
+    auto this_task = make_task();
+    continuation_task.succeed(this_task);
+    executor.run(continuation_task);
+    return continuation_calc;
+  }
+
+  TResult result() const {
+    return _impl->result();
+  }
+
+  bool is_finished() const {
+    return _impl->is_finished();
+  }
+
 
 private:
   std::shared_ptr<CalcImpl<TResult()>> _impl;
@@ -137,6 +212,11 @@ struct Calc<void(TArg)> {
     return Task{_impl};
   }
 
+  bool is_finished() const {
+    return _impl->is_finished();
+  }
+
+
 private:
   std::shared_ptr<CalcImpl<void(TArg)>> _impl;
 };
@@ -154,6 +234,11 @@ struct Calc<void()> {
   Task make_task() const {
     return Task{_impl};
   }
+
+  bool is_finished() const {
+    return _impl->is_finished();
+  }
+
 private:
   std::shared_ptr<CalcImpl<void()>> _impl;
 };
