@@ -24,8 +24,10 @@ jobs:
 
             mkdir -p build
             cd build
+            chmod +x ../scripts/make_debug.sh
             ../scripts/make_debug.sh
             ./Debug/tests/tests
+            chmod +x ../scripts/make_release.sh
             ../scripts/make_release.sh
             ./Release/tests/tests
             
