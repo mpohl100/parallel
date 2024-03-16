@@ -22,14 +22,23 @@ jobs:
           runCmd: |
             # Add multiple commands to run if needed
 
-            mkdir -p build
-            cd build
             conan profile detect
-            chmod +x ../scripts/make_debug.sh
-            ../scripts/make_debug.sh
+            mkdir -p build_gcc
+            cd build_gcc
+            chmod +x ../scripts/make_debug_gcc.sh
+            ../scripts/make_debug_gcc.sh
             ./Debug/tests/tests
-            chmod +x ../scripts/make_release.sh
-            ../scripts/make_release.sh
+            chmod +x ../scripts/make_release_gcc.sh
+            ../scripts/make_release_gcc.sh
+            ./Release/tests/tests
+            cd ..
+            mkdir -p build_clang
+            cd build_clang
+            chmod +x ../scripts/make_debug_clang.sh
+            ../scripts/make_debug_clang.sh
+            ./Debug/tests/tests
+            chmod +x ../scripts/make_release_clang.sh
+            ../scripts/make_release_clang.sh
             ./Release/tests/tests
             
 
