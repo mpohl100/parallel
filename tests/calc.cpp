@@ -54,6 +54,44 @@ TEST_CASE("Calc", "[calc]") {
     CHECK(result == 44);
   }
 
+  SECTION("LoadTest"){
+    auto executor = par::Executor{4};
+    auto return_function = [](){ return 42; };
+    auto inout_function = [](int i){ return ++i; };
+    std::vector<par::Calc<int()>> initial_works;
+    std::vector<par::Calc<int()>> final_works;
+    for (size_t i = 0; i < 10; i++){
+      auto work = par::Calc<int()>{return_function};
+      initial_works.push_back(work);
+      auto previous_work = work;
+      for(size_t j = 0; j < 5; ++j){
+        auto work_then = previous_work.then<int>(executor, inout_function);
+        previous_work = work_then;
+        if(j >= 4){
+          final_works.push_back(work_then);
+        }
+      }
+    }
+    for (auto& work : initial_works){
+      executor.run(work.make_task());
+    }
+    for (auto& work : final_works){
+      executor.wait_for(work.make_task());
+      CHECK(work.is_finished());
+    }
+    // check work is finished
+    for(auto& work : initial_works){
+      CHECK(work.is_finished());
+    }
+    for(auto& work : final_works){
+      CHECK(work.is_finished());
+    }
+    // check results
+    for(auto& work : final_works){
+      CHECK(work.result() == 1042);
+    }
+  }
+
 }
 
 } // namespace
