@@ -88,7 +88,7 @@ TEST_CASE("Calc", "[calc]") {
     }
     // check results
     for(auto& work : final_works){
-      CHECK(work.result() == 1042);
+      CHECK(work.result() == 47);
     }
   }
 

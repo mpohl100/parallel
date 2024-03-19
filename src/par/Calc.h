@@ -125,9 +125,10 @@ struct Calc<TResult(TArg)> {
 
   Calc<void()> then(Executor& executor, std::function<void(TResult)> continuation)
   {
-    auto func = [this, continuation]() {
-      assert(this->impl()->is_finished());
-      continuation(this->result());
+    auto this_calc = *this;
+    auto func = [this_calc, continuation]() {
+      assert(this_calc.is_finished());
+      continuation(this_calc.result());
     };
     auto continuation_calc = Calc<void()>(func);
     auto continuation_task = continuation_calc.make_task();
@@ -139,9 +140,10 @@ struct Calc<TResult(TArg)> {
   template<typename ThenResult>
   Calc<ThenResult()> then(Executor& executor, std::function<ThenResult(TResult)> continuation)
   {
-    auto func = [this, continuation]() {
-      assert(this->impl()->is_finished());
-      return continuation(this->result());
+    auto this_calc = *this;
+    auto func = [this_calc, continuation]() {
+      assert(this_calc.is_finished());
+      return continuation(this_calc.result());
     };
     auto continuation_calc = Calc<ThenResult()>(func);
     auto continuation_task = continuation_calc.make_task();
@@ -178,9 +180,10 @@ struct Calc<TResult()> {
 
   Calc<void()> then(Executor& executor, std::function<void(TResult)> continuation)
   {
-    auto func = [this, continuation]() {
-      assert(this->_impl->is_finished());
-      continuation(this->result());
+    auto this_calc = *this;
+    auto func = [this_calc, continuation]() {
+      assert(this_calc.is_finished());
+      continuation(this_calc.result());
     };
     auto continuation_calc = Calc<void()>(func);
     auto continuation_task = continuation_calc.make_task();
@@ -193,9 +196,10 @@ struct Calc<TResult()> {
   template<typename ThenResult>
   Calc<ThenResult()> then(Executor& executor, std::function<ThenResult(TResult)> continuation)
   {
-    auto func = [this, continuation]() {
-      assert(this->_impl->is_finished());
-      return continuation(this->result());
+    auto this_calc = *this;
+    auto func = [this_calc, continuation]() {
+      assert(this_calc.is_finished());
+      return continuation(this_calc.result());
     };
     auto continuation_calc = Calc<ThenResult()>(func);
     auto continuation_task = continuation_calc.make_task();
