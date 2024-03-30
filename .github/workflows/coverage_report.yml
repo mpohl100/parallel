@@ -19,6 +19,7 @@ jobs:
     - name: Build and run tests and generate coverage report
       uses: devcontainers/ci@v0.3
       with:
+        service: vscode
         runCmd: |
           # Compile with coverage flags
           # Replace these commands with your actual build commands
@@ -35,8 +36,18 @@ jobs:
           cd Debug
           make coverage
 
-    # - name: Coveralls
-    #   uses: coverallsapp/github-action@master
-    #   with:
-    #     path-to-lcov: ${{runner.workspace}}/coverage.info
-    #     github-token: ${{ secrets.GITHUB_TOKEN }}
+    # Retrieve the container ID
+    - name: Get container ID
+      id: get_container_id
+      run: echo "::set-output name=container_id::$(docker ps -aqf 'name=vscode')"
+
+    # Copy coverage.info from devcontainer to runner.workspace
+    - name: Copy coverage.info
+      run: docker cp ${{ steps.get_container_id.outputs.container_id }}:/workspaces/${{github.event.repository.name}}/build/Debug/coverage.info ${{runner.workspace}}/coverage.info
+
+
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        path-to-lcov: ${{runner.workspace}}/coverage.info
+        github-token: ${{ secrets.GITHUB_TOKEN }}
