@@ -79,6 +79,29 @@ public:
 #endif
   }
 
+  bool wait_for(Task work, std::chrono::microseconds timeout) {
+#if DO_LOG
+    std::cout << "Executor::wait_for(timeout)" << std::endl;
+#endif
+    auto start = std::chrono::high_resolution_clock::now();
+    while (true) {
+#if DO_LOG
+      std::cout << "Executor::wait_for(timeout) checking if finished"
+                << std::endl;   
+#endif
+      if (erase_work_from_finished(work)) {
+        return true;
+      }
+      auto now = std::chrono::high_resolution_clock::now();
+      if (now - start > timeout) {
+        return false;
+      }
+      std::this_thread::sleep_for(std::chrono::microseconds(1));
+    }
+    // should never be reached
+    return false;
+  }
+
   bool does_not_know(Task work) {
     std::unique_lock<std::mutex> lock(*_mutex);
     bool not_in_queued_tasks =
