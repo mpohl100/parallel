@@ -32,17 +32,28 @@ public:
     async_init(num_threads);
   }
 
+  void run_in(Task task, std::chrono::microseconds start_difference) {
+#if DO_LOG
+    std::cout << "Executor::run_in()" << std::endl;
+#endif
+    std::unique_lock<std::mutex> lock(*_mutex);
+    const auto now = std::chrono::high_resolution_clock::now();
+    const auto start_time = now + start_difference;
+    _queued_tasks.push_back({task, start_time});
+  }
+
   void run(Task task) {
 #if DO_LOG
     std::cout << "Executor::run()" << std::endl;
 #endif
     std::unique_lock<std::mutex> lock(*_mutex);
-    _queued_tasks.push_back(task);
+    const auto now = std::chrono::high_resolution_clock::now();
+    _queued_tasks.push_back({task, now});
   }
 
   bool erase_work_from_finished(Task work, bool do_lock = true) {
     std::optional<std::unique_lock<std::mutex>> lock;
-    if(do_lock){
+    if (do_lock) {
       lock = std::unique_lock<std::mutex>{*_mutex};
     }
     auto it = std::find(_finished_tasks.begin(), _finished_tasks.end(), work);
@@ -87,7 +98,7 @@ public:
     while (true) {
 #if DO_LOG
       std::cout << "Executor::wait_for(timeout) checking if finished"
-                << std::endl;   
+                << std::endl;
 #endif
       if (erase_work_from_finished(work)) {
         return true;
@@ -105,8 +116,10 @@ public:
   bool does_not_know(Task work) {
     std::unique_lock<std::mutex> lock(*_mutex);
     bool not_in_queued_tasks =
-        std::find(_queued_tasks.begin(), _queued_tasks.end(), work) ==
-        _queued_tasks.end();
+        std::find_if(_queued_tasks.begin(), _queued_tasks.end(),
+                     [&work](const auto &timed_task) {
+                       return timed_task.task == work;
+                     }) == _queued_tasks.end();
     bool not_in_scheduled_tasks =
         std::find(_scheduled_tasks.begin(), _scheduled_tasks.end(), work) ==
         _scheduled_tasks.end();
@@ -189,11 +202,15 @@ private:
               << std::endl;
 #endif
     std::unique_lock<std::mutex> lock(*_mutex);
+    const auto now = std::chrono::high_resolution_clock::now();
     auto queued_tasks_iterator = _queued_tasks.begin();
     while (queued_tasks_iterator != _queued_tasks.end()) {
-      if (queued_tasks_iterator->get()->can_be_started()) {
+      if (queued_tasks_iterator->start_time > now) {
+        continue;
+      }
+      if (queued_tasks_iterator->task.get()->can_be_started()) {
         _scheduled_tasks.insert(_scheduled_tasks.begin(),
-                                *queued_tasks_iterator);
+                                queued_tasks_iterator->task);
         queued_tasks_iterator = _queued_tasks.erase(queued_tasks_iterator);
       } else
         queued_tasks_iterator++;
@@ -219,9 +236,14 @@ private:
     _cancelled = true;
   }
 
+  struct TimedTask {
+    Task task;
+    std::chrono::system_clock::time_point start_time;
+  };
+
   std::thread _main_thread;
   std::vector<std::thread> _worker_threads;
-  std::vector<Task> _queued_tasks;
+  std::vector<TimedTask> _queued_tasks;
   std::vector<Task> _scheduled_tasks;
   std::vector<Task> _started_tasks;
   std::vector<Task> _finished_tasks;
