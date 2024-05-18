@@ -27,9 +27,10 @@ template <typename TResultWait, typename TResultContinue> struct Poll {
   }
 
   void poll() const {
-    if (!_executor.wait_for(_calc_to_wait_for.make_task(), _timeout)) {
+    if (!_executor.wait_for(_calc_to_wait_for.make_task(),
+                            std::chrono::microseconds{0})) {
       auto this_task = make_task();
-      _executor.run(this_task);
+      _executor.run_in(this_task, _timeout);
       return;
     }
     auto calc_to_continue = Calc<TResultContinue()>(
