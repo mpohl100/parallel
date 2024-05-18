@@ -205,10 +205,8 @@ private:
     const auto now = std::chrono::high_resolution_clock::now();
     auto queued_tasks_iterator = _queued_tasks.begin();
     while (queued_tasks_iterator != _queued_tasks.end()) {
-      if (queued_tasks_iterator->start_time > now) {
-        continue;
-      }
-      if (queued_tasks_iterator->task.get()->can_be_started()) {
+      if (queued_tasks_iterator->start_time < now &&
+          queued_tasks_iterator->task.get()->can_be_started()) {
         _scheduled_tasks.insert(_scheduled_tasks.begin(),
                                 queued_tasks_iterator->task);
         queued_tasks_iterator = _queued_tasks.erase(queued_tasks_iterator);
