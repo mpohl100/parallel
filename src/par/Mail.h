@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Executor.h"
 #include "Calc.h"
+#include "Executor.h"
 
 #include <memory>
 
@@ -9,6 +9,11 @@ namespace par {
 
 struct Addressee {
   virtual void receive() = 0;
+  void set_inactive() { _inactive = true; }
+  bool get_inactive() const { return _inactive; }
+
+private:
+  bool _inactive = false;
 };
 
 struct MailBox {
@@ -20,18 +25,14 @@ struct MailBox {
   MailBox &operator=(const MailBox &) = default;
   void arrived() {
     // remove deleted Orchestrators
-    auto it =
-        std::remove_if(_addressees.begin(), _addressees.end(),
-                       [](const std::shared_ptr<Addressee> &Orchestrator) {
-                         if (Orchestrator.use_count() == 1) {
-                           return true;
-                         }
-                         return false;
-                       });
+    auto it = std::remove_if(_addressees.begin(), _addressees.end(),
+                             [](const std::shared_ptr<Addressee> &addressee) {
+                               return addressee->get_inactive();
+                             });
     _addressees = {_addressees.begin(), it};
 
     // synchronous updates
-    if(!_executor) {
+    if (!_executor) {
       for (auto &addressee : _addressees) {
         addressee->receive();
       }
@@ -39,7 +40,12 @@ struct MailBox {
     }
     // asynchronous updates
     for (auto &addressee : _addressees) {
-      const auto func = [addressee](){ addressee->receive(); };
+      const auto func = [addressee]() {
+        if (addressee->get_inactive()) {
+          return;
+        }
+        addressee->receive();
+      };
       const auto calc = Calc<void()>{func};
       _executor->run(calc.make_task());
     }
@@ -62,11 +68,15 @@ struct Orchestrator {
   Orchestrator(const Orchestrator &) = default;
   Orchestrator &operator=(const Orchestrator &) = default;
 
-  virtual ~Orchestrator() = default;
+  virtual ~Orchestrator() {
+    if (_addressee) {
+      _addressee->set_inactive();
+    }
+  }
 
   std::shared_ptr<Addressee> get() const { return _addressee; }
   void expect(MailBox &mail_box) { mail_box.add(_addressee); }
-  
+
 private:
   std::shared_ptr<Addressee> _addressee = nullptr;
 };
