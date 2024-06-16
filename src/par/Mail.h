@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Executor.h"
+#include "Calc.h"
+
 #include <memory>
 
 namespace par {
@@ -9,6 +12,12 @@ struct Addressee {
 };
 
 struct MailBox {
+  MailBox(std::shared_ptr<Executor> executor) : _executor{executor} {}
+  MailBox() = default;
+  MailBox(MailBox &&) = default;
+  MailBox &operator=(MailBox &&) = default;
+  MailBox(const MailBox &) = default;
+  MailBox &operator=(const MailBox &) = default;
   void arrived() {
     // remove deleted Orchestrators
     auto it =
@@ -20,9 +29,19 @@ struct MailBox {
                          return false;
                        });
     _addressees = {_addressees.begin(), it};
-    // bubble through
+
+    // synchronous updates
+    if(!_executor) {
+      for (auto &addressee : _addressees) {
+        addressee->receive();
+      }
+      return;
+    }
+    // asynchronous updates
     for (auto &addressee : _addressees) {
-      addressee->receive();
+      const auto func = [addressee](){ addressee->receive(); };
+      const auto calc = Calc<void()>{func};
+      _executor->run(calc.make_task());
     }
   }
   void add(std::shared_ptr<Addressee> addressee) {
@@ -31,6 +50,7 @@ struct MailBox {
 
 private:
   std::vector<std::shared_ptr<Addressee>> _addressees;
+  std::shared_ptr<Executor> _executor = nullptr;
 };
 
 struct Orchestrator {
