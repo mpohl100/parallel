@@ -4,17 +4,17 @@
 
 namespace par {
 
-struct AddresseeImpl {
+struct Addressee {
   virtual void receive() = 0;
 };
 
 struct MailBox {
   void arrived() {
-    // remove deleted addressees
+    // remove deleted Orchestrators
     auto it =
         std::remove_if(_addressees.begin(), _addressees.end(),
-                       [](const std::shared_ptr<AddresseeImpl> &addressee) {
-                         if (addressee.use_count() == 1) {
+                       [](const std::shared_ptr<Addressee> &Orchestrator) {
+                         if (Orchestrator.use_count() == 1) {
                            return true;
                          }
                          return false;
@@ -25,30 +25,30 @@ struct MailBox {
       addressee->receive();
     }
   }
-  void add(std::shared_ptr<AddresseeImpl> addressee) {
+  void add(std::shared_ptr<Addressee> addressee) {
     _addressees.push_back(addressee);
   }
 
 private:
-  std::vector<std::shared_ptr<AddresseeImpl>> _addressees;
+  std::vector<std::shared_ptr<Addressee>> _addressees;
 };
 
-struct Addressee {
-  Addressee(std::shared_ptr<AddresseeImpl> addressee_impl)
-      : _addressee_impl{addressee_impl} {}
-  Addressee() = default;
-  Addressee(Addressee &&) = default;
-  Addressee &operator=(Addressee &&) = default;
-  Addressee(const Addressee &) = default;
-  Addressee &operator=(const Addressee &) = default;
+struct Orchestrator {
+  Orchestrator(std::shared_ptr<Addressee> Orchestrator_impl)
+      : _addressee{Orchestrator_impl} {}
+  Orchestrator() = default;
+  Orchestrator(Orchestrator &&) = default;
+  Orchestrator &operator=(Orchestrator &&) = default;
+  Orchestrator(const Orchestrator &) = default;
+  Orchestrator &operator=(const Orchestrator &) = default;
 
-  virtual ~Addressee() = default;
+  virtual ~Orchestrator() = default;
 
-  std::shared_ptr<AddresseeImpl> get() const { return _addressee_impl; }
-  void expect(MailBox &mail_box) { mail_box.add(_addressee_impl); }
+  std::shared_ptr<Addressee> get() const { return _addressee; }
+  void expect(MailBox &mail_box) { mail_box.add(_addressee); }
   
 private:
-  std::shared_ptr<AddresseeImpl> _addressee_impl = nullptr;
+  std::shared_ptr<Addressee> _addressee = nullptr;
 };
 
 } // namespace par
