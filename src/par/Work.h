@@ -16,7 +16,7 @@ public:
   virtual ~Work() = default;
 
   virtual void call() = 0;
-  void add_predecessor(const std::shared_ptr<Work> &work) {
+  void add_predecessor(std::shared_ptr<Work> work) {
     _predecessors.push_back(work);
   }
   bool can_be_started() const {
