@@ -7,8 +7,6 @@
 
 namespace par {
 
-struct Executor;
-
 struct TaskGraph {
   TaskGraph() = default;
   TaskGraph(const TaskGraph &) = default;
@@ -21,6 +19,8 @@ struct TaskGraph {
     _tasks.push_back(task);
   }
 
+  std::vector<Task> get_tasks() const { return _tasks; }
+
 private:
   Task create_dummy_finish_task() {
     auto calc = Calculation{[]() -> void {}};
@@ -28,10 +28,6 @@ private:
   }
 
   std::vector<Task> _tasks = {create_dummy_finish_task()};
-
-  std::vector<Task> get_tasks() const { return _tasks; }
-
-  friend class Executor;
 };
 
 }

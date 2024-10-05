@@ -26,6 +26,7 @@ TEST_CASE("TaskGraph", "[taskgraph]") {
     executor.run(task_graph);
     executor.wait_for(task_graph);
     CHECK(finished);
+    CHECK(executor.does_not_know(task));
   }
   SECTION("TaskGraphFinishesChainOfCalcs"){
     auto executor = par::Executor{4};
@@ -46,6 +47,27 @@ TEST_CASE("TaskGraph", "[taskgraph]") {
     executor.run(task_graph);
     executor.wait_for(task_graph);
     CHECK(third_calc.result() == 44);
+    CHECK(executor.does_not_know(first_calc.make_task()));
+    CHECK(executor.does_not_know(second_calc.make_task()));
+    CHECK(executor.does_not_know(third_calc.make_task()));
+    for(const auto& task : task_graph.get_tasks()){
+      CHECK(executor.does_not_know(task));
+    }
+  }
+  SECTION("TaskGraphExecutes100Tasks"){
+    auto executor = par::Executor{4};
+    auto task_graph = par::TaskGraph{};
+    for(int i = 0; i < 100; ++i){
+      auto calc = par::Calculation{[i]() -> void {
+        std::cout << "hello from task " << i << std::endl;
+      }};
+      task_graph.add_task(calc.make_task());
+    }
+    executor.run(task_graph);
+    executor.wait_for(task_graph);
+    for(const auto& task : task_graph.get_tasks()){
+      CHECK(executor.does_not_know(task));
+    }
   }
 }
 
