@@ -19,9 +19,9 @@ TEST_CASE("TaskGraph", "[taskgraph]") {
     auto task_graph = par::TaskGraph{};
     auto executor = par::Executor{4};
     bool finished = false;
-    auto task = par::Task{[&finished]() -> void {
+    auto task = par::Calculation{[&finished]() -> void {
       finished = true;
-    }};
+    }}.make_task();
     task_graph.add_task(task);
     executor.run(task_graph);
     executor.wait_for(task_graph);
@@ -32,17 +32,17 @@ TEST_CASE("TaskGraph", "[taskgraph]") {
     auto first_calc = par::Calc<int()>{[]() -> int {
       return 42;
     }};
-    auto second_calc = first_calc.then(executor, [](int x) -> int {
+    auto second_calc = first_calc.then<int>(executor, [](int x) -> int {
       return x + 1;
     });
-    auto third_calc = second_calc.then(executor, [](int x) -> int {
+    auto third_calc = second_calc.then<int>(executor, [](int x) -> int {
       return x + 1;
     });
     
     auto task_graph = par::TaskGraph{};
-    task_graph.add(first_calc.make_task());
-    task_graph.add(second_calc.make_task());
-    task_graph.add(third_calc.make_task());
+    task_graph.add_task(first_calc.make_task());
+    task_graph.add_task(second_calc.make_task());
+    task_graph.add_task(third_calc.make_task());
     executor.run(task_graph);
     executor.wait_for(task_graph);
     CHECK(third_calc.result() == 44);
