@@ -18,7 +18,7 @@ public:
   virtual ~Task() = default;
   Task(std::shared_ptr<Work> work) : _work{work} {}
 
-  void succeed(Task &task);
+  void succeed(Task task);
 
 private:
   std::shared_ptr<Work> get() const { return _work; }
@@ -32,7 +32,7 @@ inline bool operator==(const Task &lhs, const Task &rhs) {
 }
 
 
-inline void Task::succeed(Task &task) {
+inline void Task::succeed(Task task) {
 #if DO_LOG
   std::cout << "Task::succeed()" << std::endl;
 #endif
