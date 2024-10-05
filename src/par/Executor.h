@@ -1,6 +1,7 @@
 #pragma once
 
 #include "par/Task.h"
+#include "par/TaskGraph.h"
 
 #include <algorithm>
 #include <chrono>
@@ -107,7 +108,7 @@ public:
   }
 
   void wait_for(TaskGraph task_graph){
-    wait_for(task_graph.get_tasks().front())
+    wait_for(task_graph.get_tasks().front());
   }
 
   bool wait_for(Task work, std::chrono::microseconds timeout) {
